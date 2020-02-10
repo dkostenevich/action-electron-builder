@@ -25,9 +25,6 @@ inputs:
   mac_certs_password:
     description: Password for decrypting `mac_certs`
     required: false
-      mac_certs:
-  description: Base64-encoded code signing certificate for macOS
-    required: false
   apple_id:
     description: Apple Id for notarization process
     required: false
