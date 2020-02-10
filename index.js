@@ -61,17 +61,12 @@ const getInput = (name, required) => {
 };
 
 /**
- * Installs NPM dependencies and builds/releases the Electron app
+ * Installs NPM dependencies and releases the Electron app
  */
 const runAction = () => {
 	const platform = getPlatform();
-	const release = getInput("release", true) === "true";
 	const pkgRoot = getInput("package_root", true);
-	const buildScriptName = getInput("build_script_name", true);
-
-	// TODO: Deprecated option, remove in v2.0. `electron-builder` always requires a `package.json` in
-	// the same directory as the Electron app, so the `package_root` option should be used instead
-	const appRoot = getInput("app_root") || pkgRoot;
+	const provider = getInput("provider", true);
 
 	const pkgJsonPath = join(pkgRoot, "package.json");
 	const pkgLockPath = join(pkgRoot, "package-lock.json");
@@ -85,17 +80,27 @@ const runAction = () => {
 		exit(`\`package.json\` file not found at path "${pkgJsonPath}"`);
 	}
 
-	// Copy "github_token" input variable to "GH_TOKEN" env variable (required by `electron-builder`)
-	setEnv("GH_TOKEN", getInput("github_token", true));
+	if (provider === 'github') {
+		// Copy "github_token" input variable to "GH_TOKEN" env variable (required by `electron-builder`)
+		setEnv("GH_TOKEN", getInput("github_token", true));
+	} else if (provider === 'spaces') {
+		// Copy "do_key_id" & "do_sercet_key" input variable to "DO_KEY_ID" & "DO_SECRET_KEY" env variables (required by `electron-builder`)
+		setEnv("DO_KEY_ID", getInput("do_key_id", true));
+		setEnv("DO_SECRET_KEY", getInput("do_secret_key", true));
+	} else {
+		exit(`"${provider}" not supported`);
+	}
 
 	// Require code signing certificate and password if building for macOS. Export them to environment
 	// variables (required by `electron-builder`)
 	if (platform === "mac") {
-		setEnv("CSC_LINK", getInput("mac_certs"));
-		setEnv("CSC_KEY_PASSWORD", getInput("mac_certs_password"));
+		setEnv("CSC_LINK", getInput("mac_certs", true));
+		setEnv("CSC_KEY_PASSWORD", getInput("mac_certs_password", true));
+		setEnv("APPLEID", getInput("apple_id", true));
+		setEnv("APPLEIDPASS", getInput("apple_id_pass", true));
 	} else if (platform === "windows") {
-		setEnv("CSC_LINK", getInput("windows_certs"));
-		setEnv("CSC_KEY_PASSWORD", getInput("windows_certs_password"));
+		setEnv("WIN_CSC_LINK", getInput("windows_certs", true));
+		setEnv("WIN_CSC_KEY_PASSWORD", getInput("windows_certs_password", true));
 	}
 
 	// Disable console advertisements during install phase
@@ -104,24 +109,9 @@ const runAction = () => {
 	log(`Installing dependencies using ${useNpm ? "NPM" : "Yarn"}…`);
 	run(useNpm ? "npm install" : "yarn", pkgRoot);
 
-	// Run NPM build script if it exists
-	log("Running the build script…");
-	if (useNpm) {
-		run(`npm run ${buildScriptName} --if-present`, pkgRoot);
-	} else {
-		// TODO: Use `yarn run ${buildScriptName} --if-present` once supported
-		// https://github.com/yarnpkg/yarn/issues/6894
-		const pkgJson = JSON.parse(readFileSync(pkgJsonPath, "utf8"));
-		if (pkgJson.scripts && pkgJson.scripts[buildScriptName]) {
-			run(`yarn run ${buildScriptName}`, pkgRoot);
-		}
-	}
-
-	log(`Building${release ? " and releasing" : ""} the Electron app…`);
+	log(`Building and releasing the Electron app…`);
 	run(
-		`${useNpm ? "npx --no-install" : "yarn run"} electron-builder --${platform} ${
-			release ? "--publish always" : ""
-		}`,
+		`${useNpm ? "npx --no-install" : "yarn run"} electron-builder --${platform} --publish always`,
 		appRoot,
 	);
 };
