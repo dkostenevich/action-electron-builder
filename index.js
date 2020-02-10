@@ -112,7 +112,7 @@ const runAction = () => {
 	log(`Building and releasing the Electron app…`);
 	run(
 		`${useNpm ? "npx --no-install" : "yarn run"} electron-builder --${platform} --publish always`,
-		appRoot,
+		pkgRoot
 	);
 };
 
