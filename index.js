@@ -67,6 +67,7 @@ const runAction = () => {
 	const platform = getPlatform();
 	const pkgRoot = getInput("package_root", true);
 	const provider = getInput("provider", true);
+	const buildScriptName = getInput("build_script_name", true);
 
 	const pkgJsonPath = join(pkgRoot, "package.json");
 	const pkgLockPath = join(pkgRoot, "package-lock.json");
@@ -108,6 +109,17 @@ const runAction = () => {
 
 	log(`Installing dependencies using ${useNpm ? "NPM" : "Yarn"}…`);
 	run(useNpm ? "npm install" : "yarn", pkgRoot);
+
+	// Run NPM build script if it exists
+	log("Running the build script…");
+	if (useNpm) {
+		run(`npm run ${buildScriptName} --if-present`, pkgRoot);
+	} else {
+		const pkgJson = JSON.parse(readFileSync(pkgJsonPath, "utf8"));
+		if (pkgJson.scripts && pkgJson.scripts[buildScriptName]) {
+			run(`yarn run ${buildScriptName}`, pkgRoot);
+		}
+	}
 
 	log(`Building and releasing the Electron app…`);
 	run(
