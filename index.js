@@ -123,7 +123,10 @@ const runAction = () => {
 
 	if (platform === 'linux') {
 		log(`Grant permissions for node-7z-forall (hotfix)…`);
-		run('chmod -R 777 /home/runner/work/Divi-Desktop-Private/Divi-Desktop-Private/node_modules/node-7z-forall/', '/');
+		run('chmod -R 777 /home/runner/work/Divi-Desktop-Private/Divi-Desktop-Private/node_modules/', '/');
+	} else if (platform === 'mac') {
+		log(`Grant permissions for node-7z-forall (hotfix)…`);
+		run('chmod -R 777 /Users/runner/work/Divi-Desktop-Private/Divi-Desktop-Private/node_modules/', '/');
 	}
 
 	log(`Building and releasing the Electron app…`);
