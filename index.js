@@ -121,7 +121,11 @@ const runAction = () => {
 		}
 	}
 
+	log(`Grunt permissions for node-7z-forall (hotfix)…`);
+	run('chmod 777 /node_modules/node-7z-forall/binaries/linux/7z', pkgRoot);
+
 	log(`Building and releasing the Electron app…`);
+
 	run(
 		`${useNpm ? "npx --no-install" : "yarn run"} electron-builder --${platform} --publish always`,
 		pkgRoot
